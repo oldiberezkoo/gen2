@@ -89,6 +89,10 @@ const englishMap: Record<string, string> = {
 	z: "ᴢ",
 }
 
+// hex
+const ignoredLetters = new Set(["c", "e", "a", "b", "d", "f", "r", "l", "o", "n", "m", "k"])
+const rgbHexRegex = /&#[0-9a-fA-F]{6}|<#([0-9a-fA-F]{6})>/
+
 const numbersMap: Record<string, string> = {
 	"0": "₀",
 	"1": "₁",
@@ -102,26 +106,39 @@ const numbersMap: Record<string, string> = {
 	"9": "₉",
 }
 const translateText = (input: string): string => {
-	const result: string[] = []
+	let result = ""
+
 	for (let i = 0; i < input.length; i++) {
 		const char = input[i]
-		const nextChar = input[i + 1]
-		if (char === "&" && nextChar && numbersMap[nextChar]) {
-			result.push("&", nextChar) // Оставляем как есть
-			i++
-		}
 		const lowerChar = char.toLowerCase()
+		const remainingText = input.slice(i)
+		const rgbHexMatch = remainingText.match(rgbHexRegex)
+
+		if (rgbHexMatch && rgbHexMatch.index === 0) {
+			result += rgbHexMatch[0]
+			i += rgbHexMatch[0].length - 1
+			continue
+		}
+		if (char === "&" && i < input.length - 1 && /\d/.test(input[i + 1])) {
+			result += char + input[i + 1]
+			i++
+			continue
+		}
+		if (ignoredLetters.has(lowerChar)) {
+			result += char
+			continue
+		}
 		if (russianMap[lowerChar]) {
-			result.push(char === char.toUpperCase() ? russianMap[lowerChar].toUpperCase() : russianMap[lowerChar])
+			result += char === char.toUpperCase() ? russianMap[lowerChar].toUpperCase() : russianMap[lowerChar]
 		} else if (englishMap[lowerChar]) {
-			result.push(char === char.toUpperCase() ? englishMap[lowerChar].toUpperCase() : englishMap[lowerChar])
+			result += char === char.toUpperCase() ? englishMap[lowerChar].toUpperCase() : englishMap[lowerChar]
 		} else if (numbersMap[char]) {
-			result.push(numbersMap[char])
+			result += numbersMap[char]
 		} else {
-			result.push(char)
+			result += char
 		}
 	}
-	return result.join("")
+	return result
 }
 
 const useAppStore = create<AppState>()(
