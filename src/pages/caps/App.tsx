@@ -102,20 +102,26 @@ const numbersMap: Record<string, string> = {
 	"9": "₉",
 }
 const translateText = (input: string): string => {
-	return input
-		.split("")
-		.map(char => {
-			const lowerChar = char.toLowerCase()
-			if (russianMap[lowerChar]) {
-				return char === char.toUpperCase() ? russianMap[lowerChar].toUpperCase() : russianMap[lowerChar]
-			} else if (englishMap[lowerChar]) {
-				return char === char.toUpperCase() ? englishMap[lowerChar].toUpperCase() : englishMap[lowerChar]
-			} else if (numbersMap[char]) {
-				return numbersMap[char]
-			}
-			return char
-		})
-		.join("")
+	const result: string[] = []
+	for (let i = 0; i < input.length; i++) {
+		const char = input[i]
+		const nextChar = input[i + 1]
+		if (char === "&" && nextChar && numbersMap[nextChar]) {
+			result.push("&", nextChar) // Оставляем как есть
+			i++
+		}
+		const lowerChar = char.toLowerCase()
+		if (russianMap[lowerChar]) {
+			result.push(char === char.toUpperCase() ? russianMap[lowerChar].toUpperCase() : russianMap[lowerChar])
+		} else if (englishMap[lowerChar]) {
+			result.push(char === char.toUpperCase() ? englishMap[lowerChar].toUpperCase() : englishMap[lowerChar])
+		} else if (numbersMap[char]) {
+			result.push(numbersMap[char])
+		} else {
+			result.push(char)
+		}
+	}
+	return result.join("")
 }
 
 const useAppStore = create<AppState>()(
@@ -129,9 +135,7 @@ const useAppStore = create<AppState>()(
 			addToHistory: item => {
 				set(state => {
 					const newItem = { id: Date.now().toString(), ...item, timestamp: Date.now() }
-					const isDuplicate = state.history.some(
-						historyItem => historyItem.source === newItem.source && historyItem.translated === newItem.translated
-					)
+					const isDuplicate = state.history.some(historyItem => historyItem.source === newItem.source && historyItem.translated === newItem.translated)
 					if (!isDuplicate) {
 						return { history: [newItem, ...state.history] }
 					}
@@ -155,18 +159,8 @@ const useAppStore = create<AppState>()(
 )
 
 export default function App() {
-	const {
-		isDarkMode,
-		history,
-		sourceText,
-		translatedText,
-		toggleTheme,
-		addToHistory,
-		clearHistory,
-		removeHistoryItem,
-		setSourceText,
-		setTranslatedText,
-	} = useAppStore()
+	const { isDarkMode, history, sourceText, translatedText, toggleTheme, addToHistory, clearHistory, removeHistoryItem, setSourceText, setTranslatedText } =
+		useAppStore()
 
 	const [copiedId, setCopiedId] = useState<string | null>(null)
 	const saveTimeout = useRef<NodeJS.Timeout | null>(null)
@@ -206,10 +200,7 @@ export default function App() {
 
 	const renderHistoryItem = useCallback(
 		({ id, source, translated, timestamp }: HistoryItem) => (
-			<div
-				key={id}
-				className='w-full flex flex-row items-center justify-between gap-4 bg-slate-100 dark:bg-stone-700 rounded-xl p-2 mb-2'
-			>
+			<div key={id} className='w-full flex flex-row items-center justify-between gap-4 bg-slate-100 dark:bg-stone-700 rounded-xl p-2 mb-2'>
 				<div className='flex items-center gap-2'>
 					<ArrowRight size={16} />
 					<p className='text-sm'>
@@ -287,11 +278,7 @@ export default function App() {
 					</button>
 				</div>
 				<div className='p-4'>
-					{history.length === 0 ? (
-						<p className='text-center text-gray-500'>No translation history.</p>
-					) : (
-						history.map(renderHistoryItem)
-					)}
+					{history.length === 0 ? <p className='text-center text-gray-500'>No translation history.</p> : history.map(renderHistoryItem)}
 				</div>
 			</section>
 		</div>
