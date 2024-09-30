@@ -298,6 +298,12 @@ export default function App() {
 					{history.length === 0 ? <p className='text-center text-gray-500'>No translation history.</p> : history.map(renderHistoryItem)}
 				</div>
 			</section>
+			<section className='p-4 my-2 w-full flex items-center justify-center'>
+				<a href='https://t.me/oldiberezko' target='_blank'>
+					powered by{" "}
+					<span className='font-bold text-transparent bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500 bg-clip-text animate-rainbow'>oldiberezko</span>
+				</a>
+			</section>
 		</div>
 	)
 }

@@ -51,6 +51,25 @@ export default {
 					5: "hsl(var(--chart-5))",
 				},
 			},
+			animation: {
+				rainbow: "rainbow 5s ease infinite",
+			},
+			keyframes: {
+				rainbow: {
+					"0%": {
+						"background-position": "0% 50%",
+						"background-size": "200% 200%",
+					},
+					"50%": {
+						"background-position": "100% 50%",
+						"background-size": "200% 200%",
+					},
+					"100%": {
+						"background-position": "0% 50%",
+						"background-size": "200% 200%",
+					},
+				},
+			},
 		},
 	},
 	plugins: [require("tailwindcss-animate")],
