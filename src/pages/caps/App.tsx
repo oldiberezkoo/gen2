@@ -1,9 +1,9 @@
 // написан на скорую руку, если что-то не так с этим кодом, пишите мне в telegram @oldiberezko
 
+import { ArrowRight, Check, Copy, Moon, Sun, Trash } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { Sun, Moon, Trash, ArrowRight, Copy, Check } from "lucide-react"
-import { useState, useEffect, useCallback, useRef } from "react"
 
 interface HistoryItem {
 	id: string
@@ -90,7 +90,7 @@ const englishMap: Record<string, string> = {
 }
 
 // hex
-const ignoredLetters = new Set(["c", "e", "a", "b", "d", "f", "r", "l", "o", "n", "m", "k"])
+const minecraftColorCodes = /§[0-9a-fk-or]|&[0-9a-fk-or]/g
 const rgbHexRegex = /&#[0-9a-fA-F]{6}|<#([0-9a-fA-F]{6})>/
 
 const numbersMap: Record<string, string> = {
@@ -105,6 +105,23 @@ const numbersMap: Record<string, string> = {
 	"8": "₈",
 	"9": "₉",
 }
+
+const extendedRussianMap: Record<string, string> = {
+	...russianMap,
+	ё: "ᴇ",
+	щ: "щ",
+	ю: "ю",
+	я: "я",
+}
+
+const extendedEnglishMap: Record<string, string> = {
+	...englishMap,
+	ñ: "ɴ",
+	é: "ᴇ",
+	è: "ᴇ",
+	ê: "ᴇ",
+}
+
 const translateText = (input: string): string => {
 	let result = ""
 
@@ -112,26 +129,37 @@ const translateText = (input: string): string => {
 		const char = input[i]
 		const lowerChar = char.toLowerCase()
 		const remainingText = input.slice(i)
+
+		// Сохраняем цветовые коды Minecraft и RGB
+		const mcColorMatch = remainingText.match(minecraftColorCodes)
 		const rgbHexMatch = remainingText.match(rgbHexRegex)
+
+		if (mcColorMatch && mcColorMatch.index === 0) {
+			result += mcColorMatch[0]
+			i += mcColorMatch[0].length - 1
+			continue
+		}
 
 		if (rgbHexMatch && rgbHexMatch.index === 0) {
 			result += rgbHexMatch[0]
 			i += rgbHexMatch[0].length - 1
 			continue
 		}
+
+		// Обработка специальных символов
 		if (char === "&" && i < input.length - 1 && /\d/.test(input[i + 1])) {
 			result += char + input[i + 1]
 			i++
 			continue
 		}
-		if (ignoredLetters.has(lowerChar)) {
-			result += char
-			continue
-		}
-		if (russianMap[lowerChar]) {
-			result += char === char.toUpperCase() ? russianMap[lowerChar].toUpperCase() : russianMap[lowerChar]
-		} else if (englishMap[lowerChar]) {
-			result += char === char.toUpperCase() ? englishMap[lowerChar].toUpperCase() : englishMap[lowerChar]
+
+		// Преобразование букв с учетом регистра
+		if (extendedRussianMap[lowerChar]) {
+			result +=
+				char === char.toUpperCase() ? extendedRussianMap[lowerChar].toUpperCase() : extendedRussianMap[lowerChar]
+		} else if (extendedEnglishMap[lowerChar]) {
+			result +=
+				char === char.toUpperCase() ? extendedEnglishMap[lowerChar].toUpperCase() : extendedEnglishMap[lowerChar]
 		} else if (numbersMap[char]) {
 			result += numbersMap[char]
 		} else {
@@ -143,16 +171,18 @@ const translateText = (input: string): string => {
 
 const useAppStore = create<AppState>()(
 	persist(
-		set => ({
+		(set) => ({
 			isDarkMode: false,
 			history: [],
 			sourceText: "",
 			translatedText: "",
-			toggleTheme: () => set(state => ({ isDarkMode: !state.isDarkMode })),
-			addToHistory: item => {
-				set(state => {
+			toggleTheme: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
+			addToHistory: (item) => {
+				set((state) => {
 					const newItem = { id: Date.now().toString(), ...item, timestamp: Date.now() }
-					const isDuplicate = state.history.some(historyItem => historyItem.source === newItem.source && historyItem.translated === newItem.translated)
+					const isDuplicate = state.history.some(
+						(historyItem) => historyItem.source === newItem.source && historyItem.translated === newItem.translated
+					)
 					if (!isDuplicate) {
 						return { history: [newItem, ...state.history] }
 					}
@@ -160,9 +190,9 @@ const useAppStore = create<AppState>()(
 				})
 			},
 			clearHistory: () => set({ history: [] }),
-			removeHistoryItem: id => {
-				set(state => ({
-					history: state.history.filter(item => item.id !== id),
+			removeHistoryItem: (id) => {
+				set((state) => ({
+					history: state.history.filter((item) => item.id !== id),
 				}))
 			},
 			setSourceText: (text: string) => set({ sourceText: text }),
@@ -170,14 +200,24 @@ const useAppStore = create<AppState>()(
 		}),
 		{
 			name: "gen2-storage",
-			partialize: state => ({ isDarkMode: state.isDarkMode, history: state.history }),
+			partialize: (state) => ({ isDarkMode: state.isDarkMode, history: state.history }),
 		}
 	)
 )
 
 export default function App() {
-	const { isDarkMode, history, sourceText, translatedText, toggleTheme, addToHistory, clearHistory, removeHistoryItem, setSourceText, setTranslatedText } =
-		useAppStore()
+	const {
+		isDarkMode,
+		history,
+		sourceText,
+		translatedText,
+		toggleTheme,
+		addToHistory,
+		clearHistory,
+		removeHistoryItem,
+		setSourceText,
+		setTranslatedText,
+	} = useAppStore()
 
 	const [copiedId, setCopiedId] = useState<string | null>(null)
 	const saveTimeout = useRef<NodeJS.Timeout | null>(null)
@@ -217,7 +257,10 @@ export default function App() {
 
 	const renderHistoryItem = useCallback(
 		({ id, source, translated, timestamp }: HistoryItem) => (
-			<div key={id} className='w-full flex flex-row items-center justify-between gap-4 bg-slate-100 dark:bg-stone-700 rounded-xl p-2 mb-2'>
+			<div
+				key={id}
+				className='w-full flex flex-row items-center justify-between gap-4 bg-slate-100 dark:bg-stone-700 rounded-xl p-2 mb-2'
+			>
 				<div className='flex items-center gap-2'>
 					<ArrowRight size={16} />
 					<p className='text-sm'>
@@ -265,7 +308,7 @@ export default function App() {
 					<textarea
 						placeholder='Enter text to translate'
 						value={sourceText}
-						onChange={e => setSourceText(e.target.value)}
+						onChange={(e) => setSourceText(e.target.value)}
 						rows={5}
 						className='w-full p-3 border rounded-md focus:outline-none focus:ring focus:ring-stone-500 dark:bg-stone-800 dark:border-stone-600 resize-none'
 					/>
@@ -295,13 +338,19 @@ export default function App() {
 					</button>
 				</div>
 				<div className='p-4'>
-					{history.length === 0 ? <p className='text-center text-gray-500'>No translation history.</p> : history.map(renderHistoryItem)}
+					{history.length === 0 ? (
+						<p className='text-center text-gray-500'>No translation history.</p>
+					) : (
+						history.map(renderHistoryItem)
+					)}
 				</div>
 			</section>
 			<section className='p-4 my-2 w-full flex items-center justify-center'>
 				<a href='https://t.me/oldiberezko' target='_blank'>
 					powered by{" "}
-					<span className='font-bold text-transparent bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500 bg-clip-text animate-rainbow'>oldiberezko</span>
+					<span className='font-bold text-transparent bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500 bg-clip-text animate-rainbow'>
+						oldiberezko
+					</span>
 				</a>
 			</section>
 		</div>
