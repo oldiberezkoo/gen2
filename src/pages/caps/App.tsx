@@ -79,7 +79,7 @@ const englishMap: Record<string, string> = {
 	p: "ᴘ",
 	q: "ǫ",
 	r: "ʀ",
-	s: "ꜱ",
+	s: "s",
 	t: "ᴛ",
 	u: "ᴜ",
 	v: "ᴠ",
@@ -120,15 +120,39 @@ const extendedEnglishMap: Record<string, string> = {
 	é: "ᴇ",
 	è: "ᴇ",
 	ê: "ᴇ",
+	q: "ǫ",
+	Q: "ǫ",
+	r: "ʀ",
+	i: "ɪ",
+	f: "ꜰ",
+
+	x: "x",
 }
+/**
+ * Переводит текст в упрощенный стиль, используя
+ * следующие правила:
+ *
+ * - сохраняет цветовые коды Minecraft (&x) и RGB (&#xxxxxx)
+ * - заменяет буквы русского алфавита на их "упрощенный"
+ *   аналог (например, "а" -> "ᴀ")
+ * - заменяет буквы английского алфавита на их "упрощенный"
+ *   аналог (например, "e" -> "ᴇ")
+ * - заменяет цифры на их "упрощенный" аналог (например, "0"
+ *   -> "₀")
+ *
+ * @param {string} input
+ * @returns {string}
+ */
 
 const translateText = (input: string): string => {
 	let result = ""
 
-	for (let i = 0; i < input.length; i++) {
-		const char = input[i]
-		const lowerChar = char.toLowerCase()
-		const remainingText = input.slice(i)
+	// Преобразуем входной текст к нижнему регистру для более стабильного перевода
+	const normalizedInput = input.toLowerCase()
+
+	for (let i = 0; i < normalizedInput.length; i++) {
+		const char = normalizedInput[i]
+		const remainingText = normalizedInput.slice(i)
 
 		// Сохраняем цветовые коды Minecraft и RGB
 		const mcColorMatch = remainingText.match(minecraftColorCodes)
@@ -147,19 +171,17 @@ const translateText = (input: string): string => {
 		}
 
 		// Обработка специальных символов
-		if (char === "&" && i < input.length - 1 && /\d/.test(input[i + 1])) {
-			result += char + input[i + 1]
+		if (char === "&" && i < normalizedInput.length - 1 && /\d/.test(normalizedInput[i + 1])) {
+			result += char + normalizedInput[i + 1]
 			i++
 			continue
 		}
 
-		// Преобразование букв с учетом регистра
-		if (extendedRussianMap[lowerChar]) {
-			result +=
-				char === char.toUpperCase() ? extendedRussianMap[lowerChar].toUpperCase() : extendedRussianMap[lowerChar]
-		} else if (extendedEnglishMap[lowerChar]) {
-			result +=
-				char === char.toUpperCase() ? extendedEnglishMap[lowerChar].toUpperCase() : extendedEnglishMap[lowerChar]
+		// Преобразование букв
+		if (extendedRussianMap[char]) {
+			result += extendedRussianMap[char]
+		} else if (extendedEnglishMap[char]) {
+			result += extendedEnglishMap[char]
 		} else if (numbersMap[char]) {
 			result += numbersMap[char]
 		} else {
