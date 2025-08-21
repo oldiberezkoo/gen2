@@ -1,5 +1,5 @@
 
-**Gen2 — Small Caps Generator**
+# **Gen2 — Small Caps Generator**
 
 Gen2 is a generator that converts text into **small caps**. It currently works with both Latin and Cyrillic alphabets and, more recently, with numbers as well. Simply enter your text in the left field, and you’ll instantly get the small caps version on the right.
 
